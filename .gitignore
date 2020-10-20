@@ -1,4 +1,5 @@
 datasets/
+files/
 final_df
 final_models
 final_model_acc

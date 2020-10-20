@@ -1,190 +1,192 @@
 
-# Module 3 Final Project
+Classification of wells' funcionality in Tanzania.
 
+# Predicting Water Well Functionality in Tanzania
 
-## Introduction
+There is no doubt that water is eseential part of human life. Without water, humans cannot last more than 3 days. However, not only the water is crucial in sustaining our lives, but it plays a crucial role in the following aspects of human lives:
 
-In this lesson, we'll review all the guidelines and specifications for the final project for Module 3.
+    [1] Education accessibility
+    [2] Empowerment to families to overcome poverty
+    [3] Higher quality of lives
+    
+Unfortunately, there are many people in the world who still do not have access to clean water, and, in fact, more than half of the population of Tanzania do not have an easy access to water source. 
 
+Thankfully, there have been many volunteers and organizations who made movements to correct this and have made a huge different over the years as shown below.
 
-## Objectives
+<img src='img/cum_num_wells.png'>
 
-- Understand all required aspects of the Final Project for Module 3
-- Understand all required deliverables
-- Understand what constitutes a successful project
+As you can see from the figure above, there are more than 50,000 water wells installed since 1960. However there is a problem. We notice that more than 40% of the wells installed are either broken or need repair. However, it can be very difficult to determine which wells need repairs due to lack of well-organized managements.
 
-## Final Project Summary
+So our goal is to make a classification model that successfully determine which wells are in need of repairs so that we would know which aspects of wells lead to malfunction.
 
-Congratulations! You've made it through another _intense_ module, and now you're ready to show off your newfound Machine Learning skills!
+# Data
 
-![awesome](https://raw.githubusercontent.com/learn-co-curriculum/dsc-mod-3-project-v2-1/master/smart.gif)
+## Provided Dataset
 
-All that remains for Module 3 is to complete the final project!
+The data that was used to train our models was provided by Taarifa and the Tanzanian Ministry of Water. You may also able to download the datasets from https://www.drivendata.org/competitions/7/pump-it-up-data-mining-the-water-table/page/23/. 
 
-## The Project
+### Dealing with class imbalance
 
-The main goal of this project is to create a classification model. For this project you have the choice to either:
+This dataset is a ternary classification with class imbalance.
 
-- choose a data set from a curated list
-- choose your own data set _outside_ of the curated list. 
+    [1] functional = 55.0%
+    [2] functional but needs repair = 6.83%
+    [3] non functional = 38.1%
+    
+This class imbalance will be dealt by two methods:
 
-The data guidelines for either option are shown below
+    [1] SMOTE - oversampling with generated data
+    [2] class_weight - from sklearn.utils
 
-For this project, you're going to select a dataset of your choosing and create a classification model. You'll start by identifying a problem you can solve with classification, and then identify a dataset. You'll then use everything you've learned about Data Science and Machine Learning thus far to source a dataset, preprocess and explore it, and then build and interpret a classification model that answers your chosen question.
+We will prioritize in using `class_weight` over `SMOTE` for `SMOTE` can cause unwanted bias in our dataset by generating more data.
 
-### a. Choosing the data from a curated list
+## Additional Dataset
 
-You are allowed to select one of the four data sets described below. Each comes with its own advantages and disadvantages, and, of course, its own associated business problem and stakeholders. It may be desirable to flesh out your understanding of the audience or the business proposition a little more than sketched out here. If you select one of these four data sets, you **need no further approval from your instructor**.
+To obtain more geographical information about Tanzania, `geojson` data of Tanzania was obtained from the following website:
+https://github.com/thadk/GeoTZ
 
+## Feature Engineering
 
-1) [Chicago Car Crash Data](https://data.cityofchicago.org/Transportation/Traffic-Crashes-Crashes/85ca-t3if). Note this links also to [Vehicle Data](https://data.cityofchicago.org/Transportation/Traffic-Crashes-Vehicles/68nd-jvt3) and to [Driver/Passenger Data](https://data.cityofchicago.org/Transportation/Traffic-Crashes-People/u6pd-qa9d).
+In order to maximize the use of our dataset, various columns that were given by the government and Taarifa were dropped and also newly made.
 
-Build a classifier to predict the primary contributory cause of a car accident, given information about the car, the people in the car, the road conditions etc. You might imagine your audience as a Vehicle Safety Board who's interested in reducing traffic accidents, or as the City of Chicago who's interested in becoming aware of any interesting patterns. Note that there is a **multi-class** classification problem. You will almost certainly want to bin or trim or otherwise limit the number of target categories on which you ultimately predict. Note e.g. that some primary contributory causes have very few samples.
+### Neighboring
 
-2) [Terry Stops Data](https://catalog.data.gov/dataset/terry-stops).
-In [*Terry v. Ohio*](https://www.oyez.org/cases/1967/67), a landmark Supreme Court case in 1967-8, the court found that a police officer was not in violation of the "unreasonable search and seizure" clause of the Fourth Amendment, even though he stopped and frisked a couple of suspects only because their behavior was suspicious. Thus was born the notion of "reasonable suspicion", according to which an agent of the police may e.g. temporarily detain a person, even in the absence of clearer evidence that would be required for full-blown arrests etc. Terry Stops are stops made of suspicious drivers.
+<img src='img/neighboring.png' width=400>
 
-Build a classifier to predict whether an arrest was made after a Terry Stop, given information about the presence of weapons, the time of day of the call, etc. Note that this is a **binary** classification problem.
+As you can see in the above figure, we see `clusters` of different classes of wells. So a new feature was made that calcuated the percentages of funcionalities of the wells near 30 KM raidus of each well.
 
-Note that this dataset also includes information about gender and race. You **may** use this data as well. You may, e.g. pitch your project as an inquiry into whether race (of officer or of subject) plays a role in whether or not an arrest is made.
+*The yellow circles do not represent 30KM radius in scaled. It is just there to show the idea!
 
-If you **do** elect to make use of race or gender data, be aware that this can make your project a highly sensitive one; your discretion will be important, as well as your transparency about how you use the data and the ethical issues surrounding it.
+### Percentages for funder, installer, and quantity
 
-3) [Customer Churn Data](https://www.kaggle.com/becksddf/churn-in-telecoms-dataset)
+<img src='img/funders.png' width=600>
 
-Build a classifier to predict whether a customer will ("soon") stop doing business with SyriaTel, a telecommunications company. Note that this is a **binary** classification problem.
+When we examine `funders` and `installers` (see figure above), it becomes apparent that some funders and installers tend have more particularly classified wells. So for each funders and installers, percentage was found according to their functionality.
 
-Most naturally, your audience here would be the telecom business itself, interested in losing money on customers who don't stick around very long. Are there any predictable patterns here?
+<img src='img/quantity.png' width=600>
 
-4) [Tanzanian Water Well Data](https://www.drivendata.org/competitions/7/pump-it-up-data-mining-the-water-table/page/23/) (*active competition*!)
-Tanzania, as a developing country, struggles with providing clean water to its population of over 57,000,000. There are many waterpoints already established in the country, but some are in need of repair while others have failed altogether.
+The same can be said for `quantity` of water.
 
-Build a classifier to predict the condition of a water well, using information about the sort of pump, when it was installed, etc. Note that this is a **ternary** classification problem.
+### Geographical Factor: Region
 
+<img src='img/geographical.png'>
 
-### b. Selecting a Data Set _Outside_ of the Curated List
+Depending on which region, the following could be different:
 
-We encourage you to be very thoughtful when identifying your problem and selecting your data set--an overscoped project goal or a poor data set can quickly bring an otherwise promising project to a grinding halt. **If you are going to choose your own data set, you'll need to run it by your instructor for approval**.
+    [1] government funding
+    [2] regional government body
+    [3] population
+    [4] climate / geographical character
+    [5] amount of water available
 
-To help you select an appropriate data set for this project, we've set some guidelines:
+So these regions were given with percentages of water wells' functionality.
 
-1. Your dataset should work for classification. The classification task can be either binary or multiclass, as long as it's a classification model.   
+# Models and Results
 
-2. Your dataset needs to be of sufficient complexity. Try to avoid picking an overly simple dataset. Try to avoid extremely small datasets, as well as the most common datasets like titanic, iris, MNIST, etc. We want to see all the steps of the Data Science Process in this project--it's okay if the dataset is mostly clean, but we expect to see some preprocessing and exploration. See the following section, **_Data Set Constraints_**, for more information on this.   
+## Overall Goals
 
-3. On the other end of the spectrum, don't pick a problem that's too complex, either. Stick to problems that you have a clear idea of how you can use machine learning to solve it. For now, we recommend you stay away from overly complex problems in the domains of Natural Language Processing or Computer Vision--although those domains make use of Supervised Learning, they come with a lot of other special requirements and techniques that you don't know yet (but you'll learn soon!). If you're chosen problem feels like you've overscoped, then it probably is. If you aren't sure if your problem scope is appropriate, double check with your instructor!  
+Out main goal is to maximize the following metrics:
+    
+[1] Recall for `functioning but need repair` and `non funcional` wells
+    - In the context of this problem, it is imperative that we can detect which wells are either not functioning or in need of repair in order for people in Tanzania to access waterpoints.
+    
+[2] Overall accuracy
+    - Even though recalls are important, it is also important to keep the overall accuracy as high as possible to minimize any unnecessary cost this model can cause.
+   
 
-#### Data Set Constraints
+<img src="img/diagram.png">
 
-When selecting a data set, be sure to take into consideration the following constraints:
+Source: https://levelup.gitconnected.com/ensemble-learning-using-the-voting-classifier-a28d450be64d?gi=ea3aaf6cf1e8
 
-1. Your data set can't be one we've already worked with in any labs.
-2. Your data set should contain a minimum of 1000 rows.    
-3. Your data set should contain a minimum of 10 predictor columns, before any one-hot encoding is performed.   
-4. Your instructor must provide final approval on your data set.
+In order to achieve this, we will use various different base models as our first layer of our model. Then we will stack the models to make an unified model that has stronger predictive force compared to individual models from the first layer as shown above.
 
-#### Problem First, or Data First?
+*Note that `voting` in the diagram above could be other form of meta-classifiers.
 
-There are two ways that you can about getting started: **_Problem-First_** or **_Data-First_**.
+## Layer 1 Models
 
-**_Problem-First_**: Start with a problem that you want to solve with classification, and then try to find the data you need to solve it.  If you can't find any data to solve your problem, then you should pick another problem.
+The following classifier models were made.
 
-**_Data-First_**: Take a look at some of the most popular internet repositories of cool data sets we've listed below. If you find a data set that's particularly interesting for you, then it's totally okay to build your problem around that data set.
+    [1] Random Forest
+    [2] Gradient Boost
+    [3] Logistic Regression
+    [4] Extra Tress 
+    [5] Adaboost
+    [6] XGBoost
+    
+We will mix both boosting and bagging algorithms to decrease bias and variance, respectively.
 
-There are plenty of amazing places that you can get your data from. We recommend you start looking at data sets in some of these resources first:
+## Layer 2 Model
 
-* [UCI Machine Learning Datasets Repository](https://archive.ics.uci.edu/ml/datasets.html)
-* [Kaggle Datasets](https://www.kaggle.com/datasets)
-* [Awesome Datasets Repo on Github](https://github.com/awesomedata/awesome-public-datasets)
-* [New York City Open Data Portal](https://opendata.cityofnewyork.us/)
-* [Inside AirBNB ](http://insideairbnb.com/)
+### Best Accuracy: Adaboost
 
+<img src='img/best_accuracy_report.png' width=600>
 
-## The Deliverables
+<img src='img/best_accuracy_cm.png'>
 
-For online students, your completed project should contain the following four deliverables:
+Layer 1 Models Used: 
+    - All of the layer 1 models were used.
+    
+Observations:
 
-1. A **_Jupyter Notebook_** containing any code you've written for this project. This work will need to be pushed to a public GitHub repository dedicated for this project.
+      [1] Difference between train and test accuracy show a sign that the model might be **overfit**.
+      [2] Highest accuracy of 81.32 %
+      [3] Actual competition accuracy of 78.81 %
 
-2. An organized **README.md** file in the GitHub repository that describes the contents of the repository. This file should be the source of information for navigating through the repository. 
+### Best Recall: RF
 
-3. A **_[Blog Post](https://github.com/learn-co-curriculum/dsc-welcome-blogging-v2-1)_**.
+<img src='img/best_recall_report.png' width=600>
+<img src='img/best_recall_cm.png'>
 
-4. An **_"Executive Summary" PowerPoint Presentation_** that gives a brief overview of your problem/dataset, and each step of the OSEMN process.
+Layer 1 Models Used: 
+    - 'Gradient Boost'
+    - 'Random Forest'
+    - 'K-Nearest Neighbor'
+    - 'Adaboost'
+    - 'Logistic Regression'
+    
+Observations:
 
-Note: On-campus students may have different deliverables, please speak with your instructor.
+      [1] Difference between train and test accuracy show a sign that the model might be overfit a 'little'.
+      [2] Macro recall is 74%
+      [3] Effective recall is 81% for repair and 84% for nonfunctioning
 
-### Jupyter Notebook Must-Haves
+### Feature Importance
 
-For this project, your Jupyter Notebook should meet the following specifications:
+<img src='img/correlation.png' width=600>
 
-**_Organization/Code Cleanliness_**
+Features that positively correlates to `functioning` wells:
 
-* The notebook should be well organized, easy to follow, and code is commented where appropriate.  
-    * Level Up: The notebook contains well-formatted, professional looking markdown cells explaining any substantial code. All functions have docstrings that act as professional-quality documentation.  
-* The notebook is written to technical audiences with a way to both understand your approach and reproduce your results. The target audience for this deliverable is other data scientists looking to validate your findings.  
+    [1] Installer - installers with better history
+    [2] funder - funder with better histotry
+    [3] water quantity - enough water quantity
+    [4] Altitude - higher altitude
+    [5] Payment - Existing payments for water usage
+    [6] Extractor type - gravity
 
-**_Process, Methodology, and Findings_**
+Features that negatively correlates to `functioning` wells:
 
-* Your notebook should contain a clear record of your process and methodology for exploring and preprocessing your data, building and tuning a model, and interpreting your results.
-* We recommend you use the OSEMN process to help organize your thoughts and stay on track.
+    [1] Water quantity - dry area
+    [2] Extractor - extractor other than gravity type
+    [3] Management - managed by VWC (village water committee)
+    [4] Water point name - water points with names (surprise)
+    [5] Payment - Lack of payments
+    [6] Neighboring - more nonfunctioning neighbors
+    
 
-### Blog Post Must-Haves
+<img src='img/correlation_all.png' width=600>
 
-Refer back to the [Blogging Guidelines](https://github.com/learn-co-curriculum/dsc-welcome-blogging-v2-1) for the technical requirements and blog ideas.
+We expected `functional` wells to oppositely correlate to `non functioning` well as shown above. However we notice how it seems `need repair` wells are behaving.
 
-## The Process
+# Further Studies
 
-These steps are informed by Smart Vision's<sup>1</sup> description of the CRISP-DM process.
+The follow aspects of the project can be touched for further studies:
+    
+    [1] Finer tuning of each model in both layer 1 and 2.
+    [2] Incorporating more geographical features into the data
+    [3] Scraping or gathering more complete data
+    [4] Dealing with class imbalance in an alternative way
 
-### 1. Business Understanding
 
-Start by reading this document, and making sure that you understand the kinds of questions being asked.  In order to narrow your focus, you will likely want to make some design choices about your specific audience, rather than addressing all of the "many people" mentioned in the background section.  Do you want to emphasize affordability, investment, or something else?  This framing will help you choose which stakeholder claims to address.
+```
 
-Three things to be sure you establish during this phase are:
-
-1. **Objectives:** what questions are you trying to answer, and for whom?
-2. **Project plan:** you may want to establish more formal project management practices, such as daily stand-ups or using a Trello board, to plan the time you have remaining.  Regardless you should determine the division of labor, communication expectations, and timeline.
-3. **Success criteria:** what does a successful project look like?  How will you know when you have achieved it?
-
-### 2. Data Understanding
-
-Write a script to download the data (or instructions for future users on how to manually download it), and explore it.  Do you understand what the columns mean?  How do the three data tables relate to each other?  How will you select the subset of relevant data?  What kind of data cleaning is required?
-
-It may be useful to generate visualizations of the data during this phase.
-
-### 3. Data Preparation
-
-Through SQL and Pandas, perform any necessary data cleaning and develop a query that pulls in all relevant data for analysis in a linear regression model, including any merging of tables.  Be sure to document any data that you choose to drop or otherwise exclude.  This is also the phase to consider any feature scaling or one-hot encoding required to feed the data into a classification model.
-
-### 4. Modeling
-
-The focus this time is on prediction. Good prediction is a matter of the model generalizing well. Steps we can take to assure good generalization include: testing the model on unseen data, cross-validation, and regularization. What sort of model should you build? A diverse portfolio is probably best. Classification models we've looked at so far include logistic regression, decision trees, bagging, and boosting, each of these with different flavors. You are encouraged to try any or all of these.
-
-### 5. Evaluation
-
-Recall that there are many different metrics we might use for evaluating a classification model. Accuracy is intuitive, but can be misleading, especially if you have class imbalances in your target. Perhaps, depending on you're defining things, it is more important to minimize false positives, or false negatives. It might therefore be more appropriate to focus on precision or recall. You might also calculate the AUC-ROC to measure your model's *discrimination*.
-
-### 6. Deployment
-
-In this case, your "deployment" comes in the form of the deliverables listed above. Make sure you can answer the following questions about your process:
-
- - "How did you pick the question(s) that you did?"
- - "Why are these questions important from a business perspective?"
- - "How did you decide on the data cleaning options you performed?"
- - "Why did you choose a given method or library?"
- - "Why did you select those visualizations and what did you learn from each of them?"
- - "Why did you pick those features as predictors?"
- - "How would you interpret the results?"
- - "How confident are you in the predictive quality of the results?"
- - "What are some of the things that could cause the results to be wrong?"
-
-
-## Grading Rubric 
-
-Online students can find a PDF of the grading rubric for the project [here](https://github.com/learn-co-curriculum/dsc-mod-3-project-v2-1/blob/master/module_3_project_rubric.pdf). _Note: On-campus students may have different requirements, please speak with your instructor._ 
-
-
-## Citation
-
-1. "What is the CRISP-DM Methodology?" Smart Vision Europe. Available at: https://www.sv-europe.com/crisp-dm-methodology/
+```

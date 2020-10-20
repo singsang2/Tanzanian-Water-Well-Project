@@ -1,11 +1,3 @@
 datasets/
 files/
-final_df
-final_models
-final_model_acc
-final_model_acc2
-final_model_recall
-funder_dict
-install_dict
-model_2
-model_2_report
+submission/

@@ -138,17 +138,16 @@ Observations:
 <img src='img/best_recall_cm.png'>
 
 Layer 1 Models Used: 
-    - 'Gradient Boost'
+    - 'XGBoost'
     - 'Random Forest'
     - 'K-Nearest Neighbor'
-    - 'Adaboost'
-    - 'Logistic Regression'
+    - 'Extra Trees'
     
 Observations:
 
       [1] Difference between train and test accuracy show a sign that the model might be overfit a 'little'.
-      [2] Macro recall is 74%
-      [3] Effective recall is 81% for repair and 84% for nonfunctioning
+      [2] Macro recall is 73%
+      [3] Effective recall is 82% for repair and 86% for nonfunctioning
 
 ### Feature Importance
 

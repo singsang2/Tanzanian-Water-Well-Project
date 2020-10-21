@@ -47,6 +47,8 @@ https://github.com/thadk/GeoTZ
 
 ## Feature Engineering
 
+Detailed exploration for each column was done in `Exploratory Note.ipynb`.
+
 In order to maximize the use of our dataset, various columns that were given by the government and Taarifa were dropped and also newly made.
 
 ### Neighboring
@@ -82,6 +84,8 @@ Depending on which region, the following could be different:
 So these regions were given with percentages of water wells' functionality.
 
 # Models and Results
+
+Some useful codes used throughout the project can be found in `src/useful_codes.py`.
 
 ## Overall Goals
 
@@ -138,16 +142,17 @@ Observations:
 <img src='img/best_recall_cm.png'>
 
 Layer 1 Models Used: 
-    - 'XGBoost'
+    - 'Gradient Boost'
     - 'Random Forest'
     - 'K-Nearest Neighbor'
-    - 'Extra Trees'
+    - 'Adaboost'
+    - 'Logistic Regression'
     
 Observations:
 
       [1] Difference between train and test accuracy show a sign that the model might be overfit a 'little'.
-      [2] Macro recall is 73%
-      [3] Effective recall is 82% for repair and 86% for nonfunctioning
+      [2] Macro recall is 74%
+      [3] Effective recall is 81% for repair and 84% for nonfunctioning
 
 ### Feature Importance
 
@@ -186,6 +191,6 @@ The follow aspects of the project can be touched for further studies:
     [4] Dealing with class imbalance in an alternative way
 
 
-```
+```python
 
 ```

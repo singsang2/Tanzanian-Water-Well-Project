@@ -21,32 +21,91 @@ from sklearn.model_selection import cross_val_score
 import pickle
 
 def save_data(data, name):
+    """
+    Saves data.
+
+    Args:
+        data (obj): data that needs to be saved
+
+        name (str): file path
+    """
     with open(name, 'wb') as f:
         pickle.dump(data, f)
 
 def load_data(name):
+    """
+    loads data
+    
+    Args:
+        name (str): file path
+    """
     with open(name, 'rb') as f:
         return pickle.load(f)
 
 def get_percent_retained(df):
+    """
+    Prints percentage of data retained from original dataset.
+
+    Args:
+        df (Pandas.DataFrame): dataframe
+    """
     original_length = 59400
     print(f'Original Length: {original_length}')
     print(f'Current Length: {df.shape[0]}')
     print(f'Percent Retained: {round(df.shape[0]/original_length * 100, 2)}%')
 
 def drop_rows_na(df, col):
+    """
+    Drops rows with null value from given column.
+
+    Args:
+        df (Pandas.DataFrame): dataframe
+
+        col (str): name of column from df.
+    """
     indices = df[col].dropna().index
     return df.loc[indices,:]
 
-def evaluate_clf_model(model, X_train, y_train, X_test,y_test, features=None, classes=None, prob=True,
-                           normalize='true',cmap='Purples', label='', cv=0):
-    """Accepts an sklearn-compatible classification model + test data 
-    and displays several sklearn.metrics functions: 
-    - classifciation_report
-    - plot_confusion_matrix
-    - plot_roc_curve
+
+def evaluate_clf_model(model,X_train, y_train, X_test,y_test, features=None, 
+                       classes=['functioning', 'needs repair', 'nonfunctioning'], 
+                       prob=True,feature_importance=True, normalize='true',cmap='Purples', label='', cv=0):
     """
-     
+    Evaluates a classifier model by providing
+        [1] Metrics including accuracy, AUC, and cross validation score.
+        [2] Classification report
+        [3] Confusion Matrix
+
+    Args:
+        model (clf ojb): classifier model
+        
+        X_train (dataframe): Training dataset
+        
+        y_train (array): Training target
+        
+        X_test (dataframe): test dataset
+        
+        y_test (array): test target
+        
+        features (list): names of the features included in the test. (Default=None)
+        
+        classes (list): list of classes in the target. (Default=['functioning', 'needs repair', 'nonfunctioning'])
+        
+        prob (bool): True of model contains pred_prob values.
+        
+        feature_importance (bool): True if model provide feature_importance.
+        
+        normalize (str): 'true' if normalize confusion matrix annotated values.
+        
+        cmap (str): color map for the confusion matrix
+
+        label (str): name of the classifier.
+        
+        cv (int): Number of cross folds for cross validation model.
+    Returns:
+        report: classfication report
+        fig, ax: matplotlib object
+    """
     ## Get Predictions
     y_hat_train = model.predict(X_train)
     y_hat_test = model.predict(X_test)
@@ -101,8 +160,9 @@ def evaluate_clf_model(model, X_train, y_train, X_test,y_test, features=None, cl
                                   normalize=normalize,
                                   cmap=cmap,ax=ax)
     ax.set(title='Confusion Matrix')
+    plt.xticks(rotation=45)
     
-    if label != 'KNN':
+    if feature_importance:
         # Feature Importance
         fig, ax = plt.subplots(figsize=(10,4))
 
@@ -120,6 +180,19 @@ def evaluate_clf_model(model, X_train, y_train, X_test,y_test, features=None, cl
     return report, fig, ax
 
 def import_data(file1, file2, drop_cols=None):
+    """
+    Imports data from given file path with option to drop columns.
+
+    Args:
+        file1 (str): filepath for dataset (X variable)
+
+        file2 (str): filepath for dataset (y variable)
+
+        drop_cols (list): list of column names to drop columns from imported dataset.
+
+    Returns:
+        df (dataframe): resulting dataframe
+    """
     X = pd.read_csv(file1)
     y = pd.read_csv(file2)
     
@@ -133,7 +206,7 @@ def import_data(file1, file2, drop_cols=None):
     X['construction_year'][mask] = X['year_recorded'][mask]
 
     # 1 if a name exists and 0 if not.
-    X['wpt_name'] = X['wpt_name']!='none'
+    X['wpt_name'] = (X['wpt_name']!='none').astype(int)
     
     if drop_cols != None:
         X.drop(columns=drop_cols, axis=1, inplace=True)
@@ -154,8 +227,14 @@ def import_data(file1, file2, drop_cols=None):
 
 def get_distance(x, y):
     """
-    x = [lat and long]
-    y = array of lat and long
+    Calculates distance between geographical locations that are described in latitude and longitudes.
+
+    Args:
+        x (list): [lat and long]
+        y (array): array of lat and long
+
+    Returns:
+        d (array): distances from y locations to x.
     """
     pi = np.pi
     R = 6371 # Average Earth radius in km
@@ -178,6 +257,17 @@ def get_distance(x, y):
     return d
 
 def get_nearby(df, r=30):
+    """
+    Iterates through each location from df and find the percentages of functioning, non-functioning, and need repairing wells around each well.
+
+    Args:
+        df (dataframe): dataframe that contains latitude, longitude information of all the wells along with their functionality.
+
+        r (int, float): radius 
+
+    Returns:
+        df (dataframe): updated dataframe with information about percentages
+    """
     X = df.drop(columns='status_group', axis=1).copy()
     y = df[['status_group']].copy()
 
@@ -214,6 +304,9 @@ def get_nearby(df, r=30):
     return df
 
 def extraction(df):
+    """
+    Converts various minor extractor types into 'other' category.
+    """
     # Extraction dictionary to simplify some of trivial ones as 'other'
     extraction_dict = {'nira/tanira':'nira', 'swn 80':'other', 
                     'other - rope pump': 'other', 'other - swn 81': 'other',
@@ -227,6 +320,20 @@ def extraction(df):
 
 # makes a dictionary that has percent func/non func/repair for each installer
 def get_percent(data, col='installer', drop=True):
+    """
+    Calculates percentages of functioning, non-functioning, and need-repairing wells for each label within a column.
+    Updates the dataframe with percentages.
+
+    Args:
+        data (dataframe): dataframe that contains both X and y.
+
+        col (str): column name
+
+        drop (bool): If True drops the column after finding the percentages.
+    
+    Returns:
+        returns percent_dictionary
+    """
     if col in data.keys():
         # copies the column
         sample = data[[col, 'status_group']].copy()
@@ -250,17 +357,37 @@ def get_percent(data, col='installer', drop=True):
         for index, row in a.iterrows():
             perc_dict[row[col]] = [row['perc_func'], row['perc_repair'], row['perc_non_func']]
 
+        # Updates the dataframe
         data[f'{col}_perc_func'] = data[col].apply(lambda x: perc_dict[x][0] if x in perc_dict.keys() else np.NaN)
         data[f'{col}_perc_repair'] = data[col].apply(lambda x: perc_dict[x][1] if x in perc_dict.keys() else np.NaN)
         data[f'{col}_perc_non_func'] = data[col].apply(lambda x: perc_dict[x][2] if x in perc_dict.keys() else np.NaN)
         
+        # Drops the original col if told
         if drop:
             data.drop(columns=[col], axis=1, inplace=True)
         else:
             print(f'Column name {col} not found.')
+    else:
+        print(f'{col} is not part of the data. Check the name of the column and try again.')
     return perc_dict
 
 def preprocess(df):
+    """
+    Preprocess the dataset.
+    [1] Test_train_splits
+    [2] Imputes
+    [3] Standard scale
+    [4] Onehotencode
+    
+    Args:
+        df (dataframe): dataframe
+
+    Returns:
+        X_train, X_test, y_train, y_test: all fitted and transformed
+        features (list): feature names
+        cat_cols (list): list of categorical columns
+        num_cols (list): list of numerical columns
+    """
     # gets cat_cols and num_cols
     cat_cols = list(df.drop(columns='status_group', axis=1).select_dtypes('O').columns)
     cat_cols.append('wpt_name')
@@ -269,6 +396,7 @@ def preprocess(df):
     X = df.drop(columns='status_group', axis=1)
     y = df['status_group']
 
+    # Splits the data
     X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.7, random_state=42)
 
     # takes care of y
@@ -297,7 +425,7 @@ def preprocess(df):
     X_train_tf = pd.DataFrame(X_train_tf, columns = features)
     X_test_tf = pd.DataFrame(X_test_tf, columns = features)
 
-    return X_train_tf, X_test_tf, y_train_tf, y_test_tf
+    return X_train_tf, X_test_tf, y_train_tf, y_test_tf, features, cat_cols, num_cols
 
 def do_everything(file1, file2, drop_cols, save=True):
     if save:
@@ -334,65 +462,186 @@ def do_everything(file1, file2, drop_cols, save=True):
     return df, X_train, X_test, y_train, y_test
 
 def get_class_weights(y):
+    """
+    Calculates class weight of target data.
+
+    Args:
+        y (list, array): target data
+
+    Returns:
+        class_weight (list): list of class_weight values.
+
+        class_weight_dict (dict): dictionary version of class_weight along with its class names
+    """
     class_weight = list(compute_class_weight(class_weight='balanced', classes=[0, 1, 2], y=y))
     class_weight_dict = {0: class_weight[0],
                     1: class_weight[1],
                     2: class_weight[2]}
     return class_weight, class_weight_dict
 
-def create_models(X_train, X_test, y_train, y_test, class_weight):
-    # Random Forest
-    RF = RandomForestClassifier(criterion='gini',
-                            n_estimators=1000,
-                            class_weight=class_weight,
-                            max_depth = 15,
-                            min_samples_split=0.001,
-                            max_features='sqrt')
-    RF.fit(X_train, y_train)
+def create_models(X_train, y_train, model_names=['RF', 'LR', 'XGB', 'AB', 'ET', 'GB', 'KNN']):
+    """
+    Creates model of choice.
+    Args:
+        X_train, y_train (dataframe, array): train dataset
+        
+        model_names (array, list): list of names of models
+                                   {'RF', 'LR', 'XGB', 'AB', 'ET', 'GB', 'KNN'}
+    
+    Returns:
+        model_v_dict (dict): dictionary of models
 
-    # Linear Regressor
-    from sklearn.linear_model import LogisticRegression
-    LR = LogisticRegression(random_state = 0, 
-                            max_iter = 1000)
-    LR.fit(X_train, y_train)
+    """
+    model_v_dict = {}
+    for name in model_names:
+        name = name.upper()
+        if name in ['RF', 'LR', 'XGB', 'AB', 'ET', 'GB', 'KNN']
+            if name == 'RF':
+                clf = RandomForestClassifier()
+            
+            elif name == 'LR':
+                clf = LogisticRegression()
 
-    # XGBoost
-    # from sklearn.model_selection import GridSearchCV
-    XGB = XGBClassifier(objective='mutli:softmax', num_class=3, 
-                        class_weight=class_weight,
-                        n_estimators=200,
-                        max_depth=5,
-                        subsample=0.6,
-                        min_child_weight=0.8)
-                        
-    XGB.fit(X_train, y_train)
+            elif name == 'XGB':
+                clf = XGBClassifier()
+            
+            elif name == 'AB':
+                clf = AdaBoostClassifier()
+            
+            elif name == 'ET':
+                clf = ExtraTreesClassifier()
+            
+            elif name == 'GB':
+                clf = GradientBoostingClassifier()
+            
+            elif name == 'KNN':
+                clf = KNeighborsClassifier()
+            
+            clf.fit(X_train, y_train)
+            
+            model_v_dict[name]['model'] = clf
+            
+    return model_v_dict
 
-    # Adaboost
-    AB = AdaBoostClassifier(n_estimators=300)
-    AB.fit(X_train, y_train)
+def compare_recalls(models, y_true, n=50):
+    """
+    Visualize results of different models in predicting test results.
+    This will aid in visualizing which model predicts better in different 
+    datasets.
+    
+    Args:
+    
+        models (dict): dictionary of models that contain predictions for test data.
+        
+        n (int): Number of bins. (Default 50)
+    
+    Returns:
+        
+        ax : matplotlib.plotly.ax that contains resulting graph.
+    """
+    
+    colors = ['royalblue', 'gold', 'lightseagreen', 'pink', 'brown', 'yellow', 'navy']
 
-    # Extra Tree
-    ET = ExtraTreesClassifier(n_estimators=200,
-                            class_weight=class_weight,
-                            max_features=0.7,
-                            min_samples_split=0.01)
+    # index values for different class
+    func_ind = pd.Series(y_true)[y_true == 0].index
+    non_func_ind = pd.Series(y_true)[y_true == 2].index
+    repair_ind = pd.Series(y_true)[y_true == 1].index
+    
+    labels = ['Functional', 'Non-Functional', 'Need Repairing']
+    
+    # Iterates through func, non_func, and repair index
+    for idx in [func_ind, non_func_ind, repair_ind]:
+        # initialize figure and ax
+        fig, ax = plt.subplots(figsize=(12,7))
+        
+        # Iterates through different models
+        for k, model in enumerate(models):
+            
+            # Takes in only appropriate result from model result
+            sample = models[model]['result_test'][idx]
+            
+            # bins
+            length = round(len(sample)/n)
+            bins = list(range(0,len(sample),length))
+            
+            x_val = []
+            y_val = []
+            
+            # Determines mid-point of bin and average predictive force
+            for i in range(1,len(bins)):
+                x_val.append((bins[i-1] + bins[i])/2)
+                y_val.append(round(sum(sample[bins[i-1]: bins[i]])/length, 2))
 
-    ET.fit(X_train, y_train)
+            # Plots predictive force for the model
+            sns.barplot(x=x_val, y=y_val, 
+                        color=colors[k], 
+                        alpha=0.5, 
+                        label=model, 
+                        ax=ax)
+        
+        plt.legend(loc='lower right', bbox_to_anchor=(1.3, 0.01))
+        ax.set(title=f'Recalls for {labels} Wells from Different Models', 
+               xlabel=f'Index bins (len={length})', 
+               ylabel='Recall')
+        ax.set_xticklabels([])
+        plt.xticks(rotation=45)
 
-    # Gradient Boosting
-    from sklearn.ensemble import GradientBoostingClassifier
-    GB = GradientBoostingClassifier(n_estimators=300,
-                                    max_depth=7,
-                                    subsample=0.6)
-    GB.fit(X_train, y_train)
+def get_voting_weight(models, names):
+    """
+    Extracts voting weights from model dictionary.
+    
+    Args:
+    
+        models (dict): dictionary of models.
+        
+        names (list): list of string of model names.
+                      possible names: {'RF', 'LR', 'XGB', 'AB', 'ET', 'GB', 'KNN'}
+                      
+    Returns:
+    
+        List of voting weights.
+    
+    """
+    voting_weights = []
+    for name in names:
+        if name.upper() in ['RF', 'LR', 'XGB', 'AB', 'ET', 'GB', 'KNN']:
+            voting_weights.append(models[name.upper()]['voting_weight'])
+        else:
+            print(f'{name.upper()} does not exist in the dicetionary. Refer to the following:')
+            print(f"Possible names: 'RF', 'LR', 'XGB', 'AB', 'ET', 'GB', 'KNN'")
+    return voting_weights
 
-    # KNN
-    KNN = KNeighborsClassifier()
-    KNN.fit(X_train, y_train)
+# Recreating df with target dummies
 
-
-    save_data([RF, LR, XGB, AB, ET, GB, KNN], 'datasets/final_models')
-    save_data(['RF', 'LR', 'XGB', 'AB', 'ET', 'GB', 'KNN'], 'datasets/final_model_names')
-
-def create_graph(df):
-    pass
+def get_corr(X_train, y_train):
+    """
+    Gets correlation matrix for target classes.
+    
+    Args:
+        X_train, y_train (dataframe, array)
+    
+    Returns:
+        df_corr (dataframe): correlation of each features in X_train vs. target classes.
+    """
+    status = {0:'functional', 1:'repair', 2:'non functional'}
+    y_t = pd.DataFrame(y_train, columns=['status_group'])
+    
+    y_t['status_group']=y_t['status_group'].apply(lambda x: status[x])
+    
+    # OHE and renames the columns
+    y_t = pd.get_dummies(y_t)
+    y_t.columns=['functional', 'non functional', 'repair']
+    
+    # forms new dataset
+    df_test = pd.concat([X_train, y_t], axis=1)
+    
+    df_corr = df_test.corr()
+    
+    # drops rows with target names
+    df_corr.drop(labels=['functional', 
+                      'non functional',
+                      'repair'], axis=0, inplace=True)
+    
+    df_corr = df_corr[['functional', 'non functional', 'repair']]
+    
+    return df_corr
